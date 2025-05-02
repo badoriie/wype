@@ -31,8 +31,9 @@ This app is designed to enhance awareness — **not replace it**. Always stay al
 
 ## Developer
 
-Made with passion by **Badoriio**  
-- [GitHub](https://github.com/badoriio)  
+Made with passion by **Badoriio**
+
+- [GitHub](https://github.com/badoriio)
 
 ---
 
