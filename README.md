@@ -1,2 +1,1 @@
-# wype
-Walk and Type safely
+# badoriio.github.io
