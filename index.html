@@ -2,130 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wype</title>
-    <style>
-      @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
-
-      :root {
-        --bg-color: #1e1f29;
-        --accent-color: #ff3cac;
-        --gradient: linear-gradient(
-          135deg,
-          #ff3cac 0%,
-          #784ba0 50%,
-          #2b86c5 100%
-        );
-      }
-
-      body {
-        background: var(--bg-color);
-        color: #fff;
-        font-family: "Roboto", sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        margin: 0;
-        padding: 1rem;
-      }
-
-      h1 {
-        font-size: 3rem;
-        background: var(--gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.5rem;
-      }
-
-      h3 {
-        font-weight: 400;
-        margin-bottom: 2rem;
-      }
-
-      video {
-        max-width: 150px;
-        max-height: 150px;
-        border-radius: 15px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        margin: 2rem 0;
-      }
-
-      button {
-        padding: 0.75rem 2rem;
-        font-size: 1rem;
-        font-weight: 500;
-        background: var(--gradient);
-        border: none;
-        border-radius: 50px;
-        color: #fff;
-        cursor: pointer;
-        margin: 0.5rem;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-      button:hover:not(:disabled) {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(255, 60, 172, 0.3);
-      }
-
-      button:disabled {
-        background: #555;
-        color: #aaa;
-        cursor: not-allowed;
-        box-shadow: none;
-        opacity: 0.6;
-      }
-
-      #approval {
-        background-color: #e6ffed;
-        color: #046c4e;
-        border: 1px solid #a4f3c0;
-        padding: 14px 18px;
-        border-radius: 10px;
-        font-size: 15px;
-        font-family: "Segoe UI", sans-serif;
-        margin: 20px;
-        line-height: 1.6;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
-      }
-
-      #disclaimer {
-        background-color: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeeba;
-        padding: 12px 16px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-family: sans-serif;
-        margin: 20px;
-        line-height: 1.5;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      }
-
-      #footnote {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        text-align: center;
-        padding: 12px;
-        background-color: #f8f9fa;
-        font-size: 14px;
-        color: #555;
-        font-family: "Segoe UI", sans-serif;
-        box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.05);
-      }
-
-      .footer-link {
-        color: #555;
-        text-decoration: none;
-        font-weight: 500;
-      }
-    </style>
-    <!-- Mobile Web App Meta -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="styles.css" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta
       name="apple-mobile-web-app-status-bar-style"
@@ -134,13 +16,20 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="manifest" href="manifest.json" />
   </head>
+
   <body>
     <h1>WYPE</h1>
     <h3>Walk and type safely</h3>
     <button id="startStopBtn" onclick="startCamera()">Start Preview</button>
-    <video id="video" autoplay muted playsinline style="display: none"></video>
+
+    <video id="video" autoplay muted playsinline></video>
+
     <button id="pipBtn" onclick="togglePiP()" disabled>
       Toggle Picture-in-Picture
+    </button>
+
+    <button id="detectBtn" onclick="toggleDetection()" disabled>
+      Start Detection
     </button>
 
     <p id="approval" style="display: none">
@@ -159,7 +48,7 @@
       All rights reserved &copy; 2025 Badoriio <br />
       &nbsp;&nbsp;
 
-      <a href="https://github.com/badoriio" target="_blank" class="footer-link">
+      <a href="https://github.com/badoriio" target="_blank" id="footer-link">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="16"
@@ -177,88 +66,5 @@
 
       &nbsp;
     </p>
-
-    <script>
-      const startStopBtn = document.getElementById("startStopBtn");
-      const pipBtn = document.getElementById("pipBtn");
-      const video = document.getElementById("video");
-      const approval = document.getElementById("approval");
-
-      async function ultraWideCameraId() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          alert("getUserMedia not supported on this device.");
-          return;
-        }
-        await navigator.mediaDevices.getUserMedia({
-          video: true,
-        });
-
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(
-          (device) => device.label === "Back Ultra Wide Camera"
-        );
-
-        return videoDevices.map((device) => device.deviceId);
-      }
-
-      async function startCamera() {
-        const wideCameraId = await ultraWideCameraId();
-
-        if (!wideCameraId || wideCameraId.length === 0) {
-          alert(
-            "No 'Ultra Wide Camera' found. This device may not support it."
-          );
-          return;
-        }
-
-        try {
-          if (video.srcObject) {
-            video.srcObject.getTracks().forEach((track) => track.stop());
-            video.srcObject = null;
-            video.style.display = "none";
-            pipBtn.disabled = true;
-            startStopBtn.innerText = "Start Preview";
-            return;
-          }
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              deviceId: { exact: wideCameraId },
-            },
-          });
-
-          video.srcObject = stream;
-          video.style.display = "block";
-          startStopBtn.innerText = "Stop Preview";
-          pipBtn.disabled = false;
-        } catch (err) {
-          alert("Camera error: " + err.message);
-          console.error(err);
-        }
-      }
-
-      async function togglePiP() {
-        try {
-          if (!document.pictureInPictureEnabled) {
-            alert("PiP not supported on this device.");
-            return;
-          }
-
-          if (document.pictureInPictureElement) {
-            await document.exitPictureInPicture();
-            approval.style.display = "none";
-          } else {
-            await video.requestPictureInPicture();
-            approval.style.display = "block";
-          }
-        } catch (err) {
-          alert(
-            "PiP failed: " +
-              err.message +
-              ". Please try it in an external browser."
-          );
-          console.error(err);
-        }
-      }
-    </script>
   </body>
 </html>
