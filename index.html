@@ -18,33 +18,35 @@
   </head>
 
   <body>
-    <h1>WYPE</h1>
-    <h3>Walk and type safely</h3>
-    <button id="startStopBtn" onclick="startCamera()">Start Preview</button>
+    <div id="main">
+      <h1>WYPE</h1>
+      <h3>Walk and type safely</h3>
+      <button id="startStopBtn" onclick="startCamera()">Start Preview</button>
 
-    <video id="video" autoplay muted playsinline></video>
+      <video id="video" autoplay muted playsinline></video>
 
-    <button id="pipBtn" onclick="togglePiP()" disabled>
-      Toggle Picture-in-Picture
-    </button>
+      <button id="pipBtn" onclick="togglePiP()" disabled>
+        Toggle Picture-in-Picture
+      </button>
 
-    <button id="detectBtn" onclick="toggleDetection()" disabled>
-      Start Detection
-    </button>
+      <button id="detectBtn" onclick="toggleDetection()" disabled>
+        Start Detection
+      </button>
 
-    <p id="approval" style="display: none">
-      Now you can minimize this window and use the app in PiP mode.
-    </p>
+      <p id="approval" style="display: none">
+        Now you can minimize this window and use the app in PiP mode.
+      </p>
 
-    <p id="disclaimer">
-      <strong>Disclaimer:</strong> This app is designed to enhance your
-      awareness — not replace it. Please stay alert and mindful of your
-      environment at all times. While we aim to support safer multitasking, we
-      cannot take responsibility for accidents or injuries that may occur. Your
-      safety is in your hands. Use responsibly.
-    </p>
+      <p id="disclaimer">
+        <strong>Disclaimer:</strong> This app is designed to enhance your
+        awareness — not replace it. Please stay alert and mindful of your
+        environment at all times. While we aim to support safer multitasking, we
+        cannot take responsibility for accidents or injuries that may occur.
+        Your safety is in your hands. Use responsibly.
+      </p>
+    </div>
 
-    <p id="footnote">
+    <footer>
       All rights reserved &copy; Badoriio <span id="year"></span>. <br />
       Licensed under
       <a
@@ -74,9 +76,9 @@
       </a>
 
       &nbsp;
-    </p>
-    <script>
-      document.getElementById("year").textContent = new Date().getFullYear();
-    </script>
+    </footer>
   </body>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
 </html>
