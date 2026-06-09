@@ -24,48 +24,58 @@ async function ultraWideCameraId() {
     alert("getUserMedia not supported on this device.");
     return;
   }
-  await navigator.mediaDevices.getUserMedia({
-    video: true,
+  // Prime camera permission with the back camera so device labels become
+  // readable without ever lighting up the front camera.
+  const primingStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" },
   });
 
   const devices = await navigator.mediaDevices.enumerateDevices();
-  const videoDevices = devices.filter((device) =>
-    device.label.includes("Ultra")
+  // Only one camera can be active at a time on iOS, so release the priming
+  // stream before opening the ultra-wide camera.
+  primingStream.getTracks().forEach((track) => track.stop());
+
+  const backUltraWide = devices.find(
+    (device) =>
+      device.kind === "videoinput" &&
+      /ultra/i.test(device.label) &&
+      !/front/i.test(device.label)
   );
 
-  return videoDevices.map((device) => device.deviceId);
+  return backUltraWide && backUltraWide.deviceId;
 }
 
 async function startCamera() {
-  const wideCameraId = await ultraWideCameraId();
+  if (video.srcObject) {
+    stopDetection();
+    cancelAnimationFrame(renderFrameId);
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture();
+    }
+    video.srcObject.getTracks().forEach((track) => track.stop());
+    video.srcObject = null;
+    pipVideo.srcObject = null;
+    pipVideo.style.display = "none";
+    approval.style.display = "none";
+    detectBtn.disabled = true;
+    detectBtn.innerText = "Start Detection";
+    detectBtn.style.background = IDLE_GRADIENT;
+    pipBtn.disabled = true;
+    pipBtn.style.background = IDLE_GRADIENT;
+    startStopBtn.innerText = "Start Preview";
+    startStopBtn.style.background = IDLE_GRADIENT;
 
-  if (!wideCameraId || wideCameraId.length === 0) {
-    alert("No 'Ultra Wide Camera' found. This device may not support it.");
     return;
   }
 
   try {
-    if (video.srcObject) {
-      stopDetection();
-      cancelAnimationFrame(renderFrameId);
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      }
-      video.srcObject.getTracks().forEach((track) => track.stop());
-      video.srcObject = null;
-      pipVideo.srcObject = null;
-      pipVideo.style.display = "none";
-      approval.style.display = "none";
-      detectBtn.disabled = true;
-      detectBtn.innerText = "Start Detection";
-      detectBtn.style.background = IDLE_GRADIENT;
-      pipBtn.disabled = true;
-      pipBtn.style.background = IDLE_GRADIENT;
-      startStopBtn.innerText = "Start Preview";
-      startStopBtn.style.background = IDLE_GRADIENT;
+    const wideCameraId = await ultraWideCameraId();
 
+    if (!wideCameraId) {
+      alert("No back 'Ultra Wide Camera' found. This device may not support it.");
       return;
     }
+
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         deviceId: { exact: wideCameraId },
