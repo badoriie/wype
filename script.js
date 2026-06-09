@@ -12,12 +12,16 @@ const IDLE_GRADIENT =
 const ACTIVE_GRADIENT =
   "linear-gradient(135deg, #32ff7e 0%, #00b894 50%, #00cec9 100%)";
 
+const MEDIAPIPE_VERSION = "0.10.21";
+const DETECTOR_MODEL_URL =
+  "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite";
+
 let stopDetectionFlag = false;
 let detectionFrameId;
 let renderFrameId;
 let latestPredictions = [];
 let dangerUntil = 0;
-let model;
+let objectDetector;
 
 async function ultraWideCameraId() {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -130,21 +134,64 @@ function drawPrediction(pred) {
   ctx.fillText(label, x + 4, labelY + fontSize);
 }
 
+async function createObjectDetector() {
+  const { ObjectDetector, FilesetResolver } = await import(
+    `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/vision_bundle.mjs`
+  );
+  const fileset = await FilesetResolver.forVisionTasks(
+    `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MEDIAPIPE_VERSION}/wasm`
+  );
+  const options = (delegate) => ({
+    baseOptions: { modelAssetPath: DETECTOR_MODEL_URL, delegate },
+    runningMode: "VIDEO",
+    scoreThreshold: 0.6,
+  });
+
+  try {
+    return await ObjectDetector.createFromOptions(fileset, options("GPU"));
+  } catch (err) {
+    console.warn("GPU delegate unavailable, falling back to CPU.", err);
+    return await ObjectDetector.createFromOptions(fileset, options("CPU"));
+  }
+}
+
 async function runDetection() {
   stopDetectionFlag = false;
-  if (!model) {
-    model = await cocoSsd.load();
+  if (!objectDetector) {
+    detectBtn.disabled = true;
+    try {
+      objectDetector = await createObjectDetector();
+    } catch (err) {
+      alert("Failed to load object detector: " + err.message);
+      console.error(err);
+      detectBtn.innerText = "Start Detection";
+      detectBtn.style.background = IDLE_GRADIENT;
+      return;
+    } finally {
+      detectBtn.disabled = !video.srcObject;
+    }
+  }
+  if (stopDetectionFlag || !video.srcObject) {
+    return;
   }
   video.play();
 
-  async function detectFrame() {
+  function detectFrame() {
     if (stopDetectionFlag) {
-      cancelAnimationFrame(detectionFrameId);
       return;
     }
 
-    const predictions = await model.detect(video);
-    latestPredictions = predictions.filter((pred) => pred.score > 0.6);
+    const result = objectDetector.detectForVideo(video, performance.now());
+    latestPredictions = result.detections.map((detection) => ({
+      bbox: [
+        detection.boundingBox.originX,
+        detection.boundingBox.originY,
+        detection.boundingBox.width,
+        detection.boundingBox.height,
+      ],
+      class: detection.categories[0].categoryName,
+      score: detection.categories[0].score,
+    }));
     if (latestPredictions.some(isDangerous)) {
       dangerUntil = performance.now() + 1000;
     }
