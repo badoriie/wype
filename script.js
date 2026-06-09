@@ -236,25 +236,36 @@ function isDangerous(prediction) {
   return closeObjects.includes(prediction.class) && bboxArea > 0.1 * frameArea;
 }
 
-async function togglePiP() {
-  try {
-    if (!document.pictureInPictureEnabled) {
-      alert("PiP not supported on this device.");
-      return;
-    }
+function togglePiP() {
+  if (!document.pictureInPictureEnabled) {
+    alert("PiP not supported on this device.");
+    return;
+  }
 
-    if (document.pictureInPictureElement) {
-      approval.style.display = "none";
-      pipBtn.style.background = IDLE_GRADIENT;
-      await document.exitPictureInPicture();
-    } else {
-      approval.style.display = "block";
-      pipBtn.style.background = ACTIVE_GRADIENT;
-      await pipVideo.play();
-      await pipVideo.requestPictureInPicture();
-    }
-  } catch (err) {
-    alert("PiP failed: " + err.message);
-    console.error(err);
+  if (document.pictureInPictureElement) {
+    document
+      .exitPictureInPicture()
+      .then(() => {
+        approval.style.display = "none";
+        pipBtn.style.background = IDLE_GRADIENT;
+      })
+      .catch((err) => {
+        alert("PiP failed: " + err.message);
+        console.error(err);
+      });
+  } else {
+    // requestPictureInPicture must run synchronously in the tap handler:
+    // awaiting anything first consumes the user activation on iOS Safari.
+    pipVideo.play();
+    pipVideo
+      .requestPictureInPicture()
+      .then(() => {
+        approval.style.display = "block";
+        pipBtn.style.background = ACTIVE_GRADIENT;
+      })
+      .catch((err) => {
+        alert("PiP failed: " + err.message);
+        console.error(err);
+      });
   }
 }
