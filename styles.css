@@ -44,6 +44,17 @@ video {
   display: none;
 }
 
+/* Source camera video: kept rendering offscreen so frames can be drawn to the canvas */
+.offscreen {
+  display: block;
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+}
+
 
 button {
   padding: 0.75rem 2rem;

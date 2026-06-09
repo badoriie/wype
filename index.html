@@ -23,7 +23,9 @@
       <h3>Walk and type safely</h3>
       <button id="startStopBtn" onclick="startCamera()">Start Preview</button>
 
-      <video id="video" autoplay muted playsinline></video>
+      <video id="video" class="offscreen" autoplay muted playsinline></video>
+      <canvas id="overlay" style="display: none"></canvas>
+      <video id="pipVideo" autoplay muted playsinline></video>
 
       <button id="pipBtn" onclick="togglePiP()" disabled>
         Toggle Picture-in-Picture
